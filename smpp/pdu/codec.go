@@ -18,7 +18,7 @@ var nextSeq uint32
 
 // codec is the base type of all PDUs.
 // It implements the PDU interface and provides a generic encoder.
-type codec struct {
+type Codec struct {
 	h *Header
 	l pdufield.List
 	f pdufield.Map
@@ -27,7 +27,7 @@ type codec struct {
 
 // init initializes the codec's list and maps and sets the header
 // sequence number.
-func (pdu *codec) init() {
+func (pdu *Codec) Init() {
 	if pdu.l == nil {
 		pdu.l = pdufield.List{}
 	}
@@ -39,17 +39,17 @@ func (pdu *codec) init() {
 }
 
 // setup replaces the codec's current maps with the given ones.
-func (pdu *codec) setup(f pdufield.Map, t pdutlv.Map) {
+func (pdu *Codec) Setup(f pdufield.Map, t pdutlv.Map) {
 	pdu.f, pdu.t = f, t
 }
 
 // Header implements the PDU interface.
-func (pdu *codec) Header() *Header {
+func (pdu *Codec) Header() *Header {
 	return pdu.h
 }
 
 // Len implements the PDU interface.
-func (pdu *codec) Len() int {
+func (pdu *Codec) Len() int {
 	l := HeaderLen
 	for _, f := range pdu.f {
 		l += f.Len()
@@ -61,22 +61,22 @@ func (pdu *codec) Len() int {
 }
 
 // FieldList implements the PDU interface.
-func (pdu *codec) FieldList() pdufield.List {
+func (pdu *Codec) FieldList() pdufield.List {
 	return pdu.l
 }
 
 // Fields implement the PDU interface.
-func (pdu *codec) Fields() pdufield.Map {
+func (pdu *Codec) Fields() pdufield.Map {
 	return pdu.f
 }
 
 // Fields implement the PDU interface.
-func (pdu *codec) TLVFields() pdutlv.Map {
+func (pdu *Codec) TLVFields() pdutlv.Map {
 	return pdu.t
 }
 
 // SerializeTo implements the PDU interface.
-func (pdu *codec) SerializeTo(w io.Writer) error {
+func (pdu *Codec) SerializeTo(w io.Writer) error {
 	var b bytes.Buffer
 	for _, k := range pdu.FieldList() {
 		f, ok := pdu.f[k]
@@ -102,14 +102,14 @@ func (pdu *codec) SerializeTo(w io.Writer) error {
 	return err
 }
 
-// decoder wraps a PDU (e.g. Bind) and the codec together and is
+// Decoder wraps a PDU (e.g. Bind) and the codec together and is
 // used for initializing new PDUs with map data decoded off the wire.
-type decoder interface {
+type Decoder interface {
 	Body
-	setup(f pdufield.Map, t pdutlv.Map)
+	Setup(f pdufield.Map, t pdutlv.Map)
 }
 
-func decodeFields(pdu decoder, b []byte) (Body, error) {
+func DecodeFields(pdu Decoder, b []byte) (Body, error) {
 	l := pdu.FieldList()
 	r := bytes.NewBuffer(b)
 	f, err := l.Decode(r)
@@ -120,30 +120,32 @@ func decodeFields(pdu decoder, b []byte) (Body, error) {
 	if err != nil {
 		return nil, err
 	}
-	pdu.setup(f, t)
+	pdu.Setup(f, t)
 	return pdu, nil
 }
 
 // Decode decodes binary PDU data. It returns a new PDU object, e.g. Bind,
 // with header and all fields decoded. The returned PDU can be modified
 // and re-serialized to its binary form.
-func Decode(r io.Reader) (Body, error) {
-	hdr, err := DecodeHeader(r)
+func Decode(r io.Reader) (decoded Body, header *Header, raw []byte, err error) {
+	header, err = DecodeHeader(r)
 	if err != nil {
-		return nil, err
+		return
 	}
-	b := make([]byte, hdr.Len-HeaderLen)
-	_, err = io.ReadFull(r, b)
+	raw = make([]byte, header.Len-HeaderLen)
+	_, err = io.ReadFull(r, raw)
 	if err != nil {
-		return nil, err
+		return
 	}
-	switch hdr.ID {
+	switch header.ID {
 	case AlertNotificationID:
 		// TODO(fiorix): Implement AlertNotification.
 	case BindReceiverID, BindTransceiverID, BindTransmitterID:
-		return decodeFields(newBind(hdr), b)
+		decoded, err = DecodeFields(newBind(header), raw)
+		return
 	case BindReceiverRespID, BindTransceiverRespID, BindTransmitterRespID:
-		return decodeFields(newBindResp(hdr), b)
+		decoded, err = DecodeFields(newBindResp(header), raw)
+		return
 	case CancelSMID:
 		// TODO(fiorix): Implement CancelSM.
 	case CancelSMRespID:
@@ -153,39 +155,54 @@ func Decode(r io.Reader) (Body, error) {
 	case DataSMRespID:
 		// TODO(fiorix): Implement DataSMResp.
 	case DeliverSMID:
-		return decodeFields(newDeliverSM(hdr), b)
+		decoded, err = DecodeFields(newDeliverSM(header), raw)
+		return
 	case DeliverSMRespID:
-		return decodeFields(newDeliverSMResp(hdr), b)
+		decoded, err = DecodeFields(newDeliverSMResp(header), raw)
+		return
 	case EnquireLinkID:
-		return decodeFields(newEnquireLink(hdr), b)
+		decoded, err = DecodeFields(newEnquireLink(header), raw)
+		return
 	case EnquireLinkRespID:
-		return decodeFields(newEnquireLinkResp(hdr), b)
+		decoded, err = DecodeFields(newEnquireLinkResp(header), raw)
+		return
 	case GenericNACKID:
-		return decodeFields(newGenericNACK(hdr), b)
+		decoded, err = DecodeFields(newGenericNACK(header), raw)
+		return
 	case OutbindID:
 		// TODO(fiorix): Implement Outbind.
 	case QuerySMID:
-		return decodeFields(newQuerySM(hdr), b)
+		decoded, err = DecodeFields(newQuerySM(header), raw)
+		return
 	case QuerySMRespID:
-		return decodeFields(newQuerySMResp(hdr), b)
+		decoded, err = DecodeFields(newQuerySMResp(header), raw)
+		return
 	case ReplaceSMID:
 		// TODO(fiorix): Implement ReplaceSM.
 	case ReplaceSMRespID:
 		// TODO(fiorix): Implement ReplaceSMResp.
 	case SubmitMultiID:
-		return decodeFields(newSubmitMulti(hdr), b)
+		decoded, err = DecodeFields(newSubmitMulti(header), raw)
+		return
 	case SubmitMultiRespID:
-		return decodeFields(newSubmitMultiResp(hdr), b)
+		decoded, err = DecodeFields(newSubmitMultiResp(header), raw)
+		return
 	case SubmitSMID:
-		return decodeFields(newSubmitSM(hdr), b)
+		decoded, err = DecodeFields(newSubmitSM(header), raw)
+		return
 	case SubmitSMRespID:
-		return decodeFields(newSubmitSMResp(hdr), b)
+		decoded, err = DecodeFields(newSubmitSMResp(header), raw)
+		return
 	case UnbindID:
-		return decodeFields(newUnbind(hdr), b)
+		decoded, err = DecodeFields(newUnbind(header), raw)
+		return
 	case UnbindRespID:
-		return decodeFields(newUnbindResp(hdr), b)
+		decoded, err = DecodeFields(newUnbindResp(header), raw)
+		return
 	default:
-		return nil, fmt.Errorf("unknown PDU type: %#x", hdr.ID)
+		err = fmt.Errorf("unknown PDU type: %#x", header.ID)
+		return
 	}
-	return nil, fmt.Errorf("PDU not implemented: %#x", hdr.ID)
+	err = fmt.Errorf("PDU not implemented: %#x", header.ID)
+	return
 }

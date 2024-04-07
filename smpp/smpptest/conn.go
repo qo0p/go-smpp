@@ -47,7 +47,8 @@ func (c *conn) RemoteAddr() net.Addr {
 
 // Read reads PDU off the wire.
 func (c *conn) Read() (pdu.Body, error) {
-	return pdu.Decode(c.r)
+	b, _, _, err := pdu.Decode(c.r)
+	return b, err
 }
 
 // Write implements the Conn interface.

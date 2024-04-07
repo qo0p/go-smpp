@@ -35,10 +35,13 @@ type Conn interface {
 	Closer
 }
 
+type UnknownPDUDecoder func(header *pdu.Header, raw []byte) (pdu.Body, error)
+
 // Reader is the interface that wraps the basic Read method.
 type Reader interface {
 	// Read reads PDU binary data off the wire and returns it.
 	Read() (pdu.Body, error)
+	SetUnknownPDUDecoder(d UnknownPDUDecoder)
 }
 
 // Writer is the interface that wraps the basic Write method.
@@ -77,14 +80,25 @@ func Dial(addr string, TLS *tls.Config) (Conn, error) {
 // conn provides the basics of a single client connection and
 // implements the Conn interface.
 type conn struct {
-	rwc net.Conn
-	r   *bufio.Reader
-	w   *bufio.Writer
+	rwc               net.Conn
+	r                 *bufio.Reader
+	w                 *bufio.Writer
+	unknownPDUDecoder UnknownPDUDecoder
 }
 
 // Read implements the Conn interface.
 func (c *conn) Read() (pdu.Body, error) {
-	return pdu.Decode(c.r)
+	pduBody, header, raw, err := pdu.Decode(c.r)
+	if err != nil {
+		if header != nil && raw != nil && c.unknownPDUDecoder != nil {
+			pduBody, err = c.unknownPDUDecoder(header, raw)
+		}
+	}
+	return pduBody, err
+}
+
+func (c *conn) SetUnknownPDUDecoder(d UnknownPDUDecoder) {
+	c.unknownPDUDecoder = d
 }
 
 // Write implements the Conn interface.
@@ -136,6 +150,10 @@ func (cs *connSwitch) Read() (pdu.Body, error) {
 		return nil, ErrNotConnected
 	}
 	return conn.Read()
+}
+
+func (cs *connSwitch) SetUnknownPDUDecoder(d UnknownPDUDecoder) {
+	cs.c.SetUnknownPDUDecoder(d)
 }
 
 // Write implements the Conn interface.
