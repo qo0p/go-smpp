@@ -93,6 +93,8 @@ type client struct {
 	WindowSize         uint
 	RateLimiter        RateLimiter
 
+	UnknownPDUDecoder UnknownPDUDecoder
+
 	// internal stuff.
 	inbox chan pdu.Body
 	conn  *connSwitch
@@ -106,6 +108,7 @@ type client struct {
 
 func (c *client) init() {
 	c.conn = &connSwitch{}
+	c.conn.UnknownPDUDecoder = c.UnknownPDUDecoder
 	c.stop = make(chan struct{})
 	if c.RateLimiter != nil {
 		c.lmctx = context.Background()

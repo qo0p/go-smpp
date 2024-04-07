@@ -31,6 +31,8 @@ type Transceiver struct {
 	RateLimiter        RateLimiter   // Rate limiter, optional.
 	WindowSize         uint
 
+	UnknownPDUDecoder UnknownPDUDecoder
+
 	Transmitter
 }
 
@@ -56,6 +58,7 @@ func (t *Transceiver) Bind() <-chan ConnStatus {
 		WindowSize:         t.WindowSize,
 		RateLimiter:        t.RateLimiter,
 		BindInterval:       t.BindInterval,
+		UnknownPDUDecoder:  t.UnknownPDUDecoder,
 	}
 	t.cl.client = c
 	c.init()

@@ -35,7 +35,7 @@ type Conn interface {
 	Closer
 }
 
-type UnknownPDUDecoder func(header *pdu.Header, raw []byte) (pdu.Body, error)
+type UnknownPDUDecoder func(header *pdu.Header, raw []byte, err error) (pdu.Body, error)
 
 // Reader is the interface that wraps the basic Read method.
 type Reader interface {
@@ -91,7 +91,7 @@ func (c *conn) Read() (pdu.Body, error) {
 	pduBody, header, raw, err := pdu.Decode(c.r)
 	if err != nil {
 		if header != nil && raw != nil && c.unknownPDUDecoder != nil {
-			pduBody, err = c.unknownPDUDecoder(header, raw)
+			pduBody, err = c.unknownPDUDecoder(header, raw, err)
 		}
 	}
 	return pduBody, err
@@ -126,8 +126,13 @@ func (c *conn) Close() error {
 // If no Conn is available, any attempt to Read/Write/Close
 // returns ErrNotConnected.
 type connSwitch struct {
-	mu sync.Mutex
-	c  Conn
+	mu                sync.Mutex
+	c                 Conn
+	UnknownPDUDecoder UnknownPDUDecoder
+}
+
+func (cs *connSwitch) SetUnknownPDUDecoder(d UnknownPDUDecoder) {
+	cs.UnknownPDUDecoder = d
 }
 
 // Set sets the underlying Conn with the given one.
@@ -138,6 +143,7 @@ func (cs *connSwitch) Set(c Conn) {
 		cs.c.Close()
 	}
 	cs.c = c
+	cs.c.SetUnknownPDUDecoder(cs.UnknownPDUDecoder)
 	cs.mu.Unlock()
 }
 
@@ -150,10 +156,6 @@ func (cs *connSwitch) Read() (pdu.Body, error) {
 		return nil, ErrNotConnected
 	}
 	return conn.Read()
-}
-
-func (cs *connSwitch) SetUnknownPDUDecoder(d UnknownPDUDecoder) {
-	cs.c.SetUnknownPDUDecoder(d)
 }
 
 // Write implements the Conn interface.
