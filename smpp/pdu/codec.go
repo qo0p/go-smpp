@@ -23,12 +23,14 @@ type Codec struct {
 	l pdufield.List
 	f pdufield.Map
 	t pdutlv.Map
+	r []byte
 }
 
-func NewCodec(h *Header, l pdufield.List) *Codec {
+func NewCodec(h *Header, l pdufield.List, r []byte) *Codec {
 	return &Codec{
 		h: h,
 		l: l,
+		r: r,
 	}
 }
 
@@ -109,6 +111,10 @@ func (pdu *Codec) SerializeTo(w io.Writer) error {
 	return err
 }
 
+func (pdu *Codec) Raw() []byte {
+	return pdu.r
+}
+
 // Decoder wraps a PDU (e.g. Bind) and the codec together and is
 // used for initializing new PDUs with map data decoded off the wire.
 type Decoder interface {
@@ -148,10 +154,10 @@ func Decode(r io.Reader) (decoded Body, header *Header, raw []byte, err error) {
 	case AlertNotificationID:
 		// TODO(fiorix): Implement AlertNotification.
 	case BindReceiverID, BindTransceiverID, BindTransmitterID:
-		decoded, err = DecodeFields(newBind(header), raw)
+		decoded, err = DecodeFields(newBind(header, raw), raw)
 		return
 	case BindReceiverRespID, BindTransceiverRespID, BindTransmitterRespID:
-		decoded, err = DecodeFields(newBindResp(header), raw)
+		decoded, err = DecodeFields(newBindResp(header, raw), raw)
 		return
 	case CancelSMID:
 		// TODO(fiorix): Implement CancelSM.
@@ -162,16 +168,16 @@ func Decode(r io.Reader) (decoded Body, header *Header, raw []byte, err error) {
 	case DataSMRespID:
 		// TODO(fiorix): Implement DataSMResp.
 	case DeliverSMID:
-		decoded, err = DecodeFields(newDeliverSM(header), raw)
+		decoded, err = DecodeFields(newDeliverSM(header, raw), raw)
 		return
 	case DeliverSMRespID:
-		decoded, err = DecodeFields(newDeliverSMResp(header), raw)
+		decoded, err = DecodeFields(newDeliverSMResp(header, raw), raw)
 		return
 	case EnquireLinkID:
-		decoded, err = DecodeFields(newEnquireLink(header), raw)
+		decoded, err = DecodeFields(newEnquireLink(header, raw), raw)
 		return
 	case EnquireLinkRespID:
-		decoded, err = DecodeFields(newEnquireLinkResp(header), raw)
+		decoded, err = DecodeFields(newEnquireLinkResp(header, raw), raw)
 		return
 	case GenericNACKID:
 		decoded, err = DecodeFields(newGenericNACK(header), raw)
@@ -179,32 +185,32 @@ func Decode(r io.Reader) (decoded Body, header *Header, raw []byte, err error) {
 	case OutbindID:
 		// TODO(fiorix): Implement Outbind.
 	case QuerySMID:
-		decoded, err = DecodeFields(newQuerySM(header), raw)
+		decoded, err = DecodeFields(newQuerySM(header, raw), raw)
 		return
 	case QuerySMRespID:
-		decoded, err = DecodeFields(newQuerySMResp(header), raw)
+		decoded, err = DecodeFields(newQuerySMResp(header, raw), raw)
 		return
 	case ReplaceSMID:
 		// TODO(fiorix): Implement ReplaceSM.
 	case ReplaceSMRespID:
 		// TODO(fiorix): Implement ReplaceSMResp.
 	case SubmitMultiID:
-		decoded, err = DecodeFields(newSubmitMulti(header), raw)
+		decoded, err = DecodeFields(newSubmitMulti(header, raw), raw)
 		return
 	case SubmitMultiRespID:
-		decoded, err = DecodeFields(newSubmitMultiResp(header), raw)
+		decoded, err = DecodeFields(newSubmitMultiResp(header, raw), raw)
 		return
 	case SubmitSMID:
-		decoded, err = DecodeFields(newSubmitSM(header), raw)
+		decoded, err = DecodeFields(newSubmitSM(header, raw), raw)
 		return
 	case SubmitSMRespID:
-		decoded, err = DecodeFields(newSubmitSMResp(header), raw)
+		decoded, err = DecodeFields(newSubmitSMResp(header, raw), raw)
 		return
 	case UnbindID:
-		decoded, err = DecodeFields(newUnbind(header), raw)
+		decoded, err = DecodeFields(newUnbind(header, raw), raw)
 		return
 	case UnbindRespID:
-		decoded, err = DecodeFields(newUnbindResp(header), raw)
+		decoded, err = DecodeFields(newUnbindResp(header, raw), raw)
 		return
 	default:
 		err = fmt.Errorf("unknown PDU type: %#x", header.ID)

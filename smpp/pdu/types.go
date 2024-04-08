@@ -57,7 +57,7 @@ func NewGenericNACK() Body {
 // Bind PDU.
 type Bind struct{ *Codec }
 
-func newBind(hdr *Header) *Codec {
+func newBind(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -68,26 +68,27 @@ func newBind(hdr *Header) *Codec {
 			pdufield.AddrTON,
 			pdufield.AddrNPI,
 			pdufield.AddressRange,
-		}}
+		},
+		r: raw}
 }
 
 // NewBindReceiver creates a new Bind PDU.
 func NewBindReceiver() Body {
-	b := newBind(&Header{ID: BindReceiverID})
+	b := newBind(&Header{ID: BindReceiverID}, nil)
 	b.Init()
 	return b
 }
 
 // NewBindTransceiver creates a new Bind PDU.
 func NewBindTransceiver() Body {
-	b := newBind(&Header{ID: BindTransceiverID})
+	b := newBind(&Header{ID: BindTransceiverID}, nil)
 	b.Init()
 	return b
 }
 
 // NewBindTransmitter creates a new Bind PDU.
 func NewBindTransmitter() Body {
-	b := newBind(&Header{ID: BindTransmitterID})
+	b := newBind(&Header{ID: BindTransmitterID}, nil)
 	b.Init()
 	return b
 }
@@ -95,30 +96,31 @@ func NewBindTransmitter() Body {
 // BindResp PDU.
 type BindResp struct{ *Codec }
 
-func newBindResp(hdr *Header) *Codec {
+func newBindResp(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{pdufield.SystemID},
+		r: raw,
 	}
 }
 
 // NewBindReceiverResp creates and initializes a new BindResp PDU.
 func NewBindReceiverResp() Body {
-	b := newBindResp(&Header{ID: BindReceiverRespID})
+	b := newBindResp(&Header{ID: BindReceiverRespID}, nil)
 	b.Init()
 	return b
 }
 
 // NewBindTransceiverResp creates and initializes a new BindResp PDU.
 func NewBindTransceiverResp() Body {
-	b := newBindResp(&Header{ID: BindTransceiverRespID})
+	b := newBindResp(&Header{ID: BindTransceiverRespID}, nil)
 	b.Init()
 	return b
 }
 
 // NewBindTransmitterResp creates and initializes a new BindResp PDU.
 func NewBindTransmitterResp() Body {
-	b := newBindResp(&Header{ID: BindTransmitterRespID})
+	b := newBindResp(&Header{ID: BindTransmitterRespID}, nil)
 	b.Init()
 	return b
 }
@@ -126,7 +128,7 @@ func NewBindTransmitterResp() Body {
 // QuerySM PDU.
 type QuerySM struct{ *Codec }
 
-func newQuerySM(hdr *Header) *Codec {
+func newQuerySM(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -135,12 +137,13 @@ func newQuerySM(hdr *Header) *Codec {
 			pdufield.SourceAddrNPI,
 			pdufield.SourceAddr,
 		},
+		r: raw,
 	}
 }
 
 // NewQuerySM creates and initializes a new QuerySM PDU.
 func NewQuerySM() Body {
-	b := newQuerySM(&Header{ID: QuerySMID})
+	b := newQuerySM(&Header{ID: QuerySMID}, nil)
 	b.Init()
 	return b
 }
@@ -148,7 +151,7 @@ func NewQuerySM() Body {
 // QuerySMResp PDU.
 type QuerySMResp struct{ *Codec }
 
-func newQuerySMResp(hdr *Header) *Codec {
+func newQuerySMResp(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -157,12 +160,13 @@ func newQuerySMResp(hdr *Header) *Codec {
 			pdufield.MessageState,
 			pdufield.ErrorCode,
 		},
+		r: raw,
 	}
 }
 
 // NewQuerySMResp creates and initializes a new QuerySMResp PDU.
 func NewQuerySMResp() Body {
-	b := newQuerySMResp(&Header{ID: QuerySMRespID})
+	b := newQuerySMResp(&Header{ID: QuerySMRespID}, nil)
 	b.Init()
 	return b
 }
@@ -170,7 +174,7 @@ func NewQuerySMResp() Body {
 // SubmitSM PDU.
 type SubmitSM struct{ *Codec }
 
-func newSubmitSM(hdr *Header) *Codec {
+func newSubmitSM(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -193,12 +197,13 @@ func newSubmitSM(hdr *Header) *Codec {
 			pdufield.SMLength,
 			pdufield.ShortMessage,
 		},
+		r: raw,
 	}
 }
 
 // NewSubmitSM creates and initializes a new SubmitSM PDU.
 func NewSubmitSM(fields pdutlv.Fields) Body {
-	b := newSubmitSM(&Header{ID: SubmitSMID})
+	b := newSubmitSM(&Header{ID: SubmitSMID}, nil)
 	b.Init()
 	for tag, value := range fields {
 		b.t.Set(tag, value)
@@ -209,18 +214,19 @@ func NewSubmitSM(fields pdutlv.Fields) Body {
 // SubmitSMResp PDU.
 type SubmitSMResp struct{ *Codec }
 
-func newSubmitSMResp(hdr *Header) *Codec {
+func newSubmitSMResp(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
 			pdufield.MessageID,
 		},
+		r: raw,
 	}
 }
 
 // NewSubmitSMResp creates and initializes a new SubmitSMResp PDU.
 func NewSubmitSMResp() Body {
-	b := newSubmitSMResp(&Header{ID: SubmitSMRespID})
+	b := newSubmitSMResp(&Header{ID: SubmitSMRespID}, nil)
 	b.Init()
 	return b
 }
@@ -228,7 +234,7 @@ func NewSubmitSMResp() Body {
 // SubmitMulti PDU.
 type SubmitMulti struct{ *Codec }
 
-func newSubmitMulti(hdr *Header) *Codec {
+func newSubmitMulti(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -250,12 +256,13 @@ func newSubmitMulti(hdr *Header) *Codec {
 			pdufield.SMLength,
 			pdufield.ShortMessage,
 		},
+		r: raw,
 	}
 }
 
 // NewSubmitMulti creates and initializes a new SubmitMulti PDU.
 func NewSubmitMulti(fields pdutlv.Fields) Body {
-	b := newSubmitMulti(&Header{ID: SubmitMultiID})
+	b := newSubmitMulti(&Header{ID: SubmitMultiID}, nil)
 	b.Init()
 	for tag, value := range fields {
 		b.t.Set(tag, value)
@@ -266,7 +273,7 @@ func NewSubmitMulti(fields pdutlv.Fields) Body {
 // SubmitMultiResp PDU.
 type SubmitMultiResp struct{ *Codec }
 
-func newSubmitMultiResp(hdr *Header) *Codec {
+func newSubmitMultiResp(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -274,12 +281,13 @@ func newSubmitMultiResp(hdr *Header) *Codec {
 			pdufield.NoUnsuccess,
 			pdufield.UnsuccessSme,
 		},
+		r: raw,
 	}
 }
 
 // NewSubmitMultiResp creates and initializes a new SubmitMultiResp PDU.
 func NewSubmitMultiResp() Body {
-	b := newSubmitMultiResp(&Header{ID: SubmitMultiRespID})
+	b := newSubmitMultiResp(&Header{ID: SubmitMultiRespID}, nil)
 	b.Init()
 	return b
 }
@@ -287,7 +295,7 @@ func NewSubmitMultiResp() Body {
 // DeliverSM PDU.
 type DeliverSM struct{ *Codec }
 
-func newDeliverSM(hdr *Header) *Codec {
+func newDeliverSM(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
@@ -310,12 +318,13 @@ func newDeliverSM(hdr *Header) *Codec {
 			pdufield.SMLength,
 			pdufield.ShortMessage,
 		},
+		r: raw,
 	}
 }
 
 // NewDeliverSM creates and initializes a new DeliverSM PDU.
 func NewDeliverSM() Body {
-	b := newDeliverSM(&Header{ID: DeliverSMID})
+	b := newDeliverSM(&Header{ID: DeliverSMID}, nil)
 	b.Init()
 	return b
 }
@@ -323,25 +332,26 @@ func NewDeliverSM() Body {
 // DeliverSMResp PDU.
 type DeliverSMResp struct{ *Codec }
 
-func newDeliverSMResp(hdr *Header) *Codec {
+func newDeliverSMResp(hdr *Header, raw []byte) *Codec {
 	return &Codec{
 		h: hdr,
 		l: pdufield.List{
 			pdufield.MessageID,
 		},
+		r: raw,
 	}
 }
 
 // NewDeliverSMResp creates and initializes a new DeliverSMResp PDU.
 func NewDeliverSMResp() Body {
-	b := newDeliverSMResp(&Header{ID: DeliverSMRespID})
+	b := newDeliverSMResp(&Header{ID: DeliverSMRespID}, nil)
 	b.Init()
 	return b
 }
 
 // NewDeliverSMRespSeq creates and initializes a new DeliverSMResp PDU for a specific seq.
 func NewDeliverSMRespSeq(seq uint32) Body {
-	b := newDeliverSMResp(&Header{ID: DeliverSMRespID, Seq: seq})
+	b := newDeliverSMResp(&Header{ID: DeliverSMRespID, Seq: seq}, nil)
 	b.Init()
 	return b
 }
@@ -349,13 +359,13 @@ func NewDeliverSMRespSeq(seq uint32) Body {
 // Unbind PDU.
 type Unbind struct{ *Codec }
 
-func newUnbind(hdr *Header) *Codec {
-	return &Codec{h: hdr}
+func newUnbind(hdr *Header, raw []byte) *Codec {
+	return &Codec{h: hdr, r: raw}
 }
 
 // NewUnbind creates and initializes a Unbind PDU.
 func NewUnbind() Body {
-	b := newUnbind(&Header{ID: UnbindID})
+	b := newUnbind(&Header{ID: UnbindID}, nil)
 	b.Init()
 	return b
 }
@@ -363,13 +373,13 @@ func NewUnbind() Body {
 // UnbindResp PDU.
 type UnbindResp struct{ *Codec }
 
-func newUnbindResp(hdr *Header) *Codec {
-	return &Codec{h: hdr}
+func newUnbindResp(hdr *Header, raw []byte) *Codec {
+	return &Codec{h: hdr, r: raw}
 }
 
 // NewUnbindResp creates and initializes a UnbindResp PDU.
 func NewUnbindResp() Body {
-	b := newUnbindResp(&Header{ID: UnbindRespID})
+	b := newUnbindResp(&Header{ID: UnbindRespID}, nil)
 	b.Init()
 	return b
 }
@@ -377,13 +387,13 @@ func NewUnbindResp() Body {
 // EnquireLink PDU.
 type EnquireLink struct{ *Codec }
 
-func newEnquireLink(hdr *Header) *Codec {
-	return &Codec{h: hdr}
+func newEnquireLink(hdr *Header, raw []byte) *Codec {
+	return &Codec{h: hdr, r: raw}
 }
 
 // NewEnquireLink creates and initializes a EnquireLink PDU.
 func NewEnquireLink() Body {
-	b := newEnquireLink(&Header{ID: EnquireLinkID})
+	b := newEnquireLink(&Header{ID: EnquireLinkID}, nil)
 	b.Init()
 	return b
 }
@@ -391,20 +401,20 @@ func NewEnquireLink() Body {
 // EnquireLinkResp PDU.
 type EnquireLinkResp struct{ *Codec }
 
-func newEnquireLinkResp(hdr *Header) *Codec {
-	return &Codec{h: hdr}
+func newEnquireLinkResp(hdr *Header, raw []byte) *Codec {
+	return &Codec{h: hdr, r: raw}
 }
 
 // NewEnquireLinkResp creates and initializes a EnquireLinkResp PDU.
 func NewEnquireLinkResp() Body {
-	b := newEnquireLinkResp(&Header{ID: EnquireLinkRespID})
+	b := newEnquireLinkResp(&Header{ID: EnquireLinkRespID}, nil)
 	b.Init()
 	return b
 }
 
 // NewEnquireLinkRespSeq creates and initializes a EnquireLinkResp PDU for a specific seq.
 func NewEnquireLinkRespSeq(seq uint32) Body {
-	b := newEnquireLinkResp(&Header{ID: EnquireLinkRespID, Seq: seq})
+	b := newEnquireLinkResp(&Header{ID: EnquireLinkRespID, Seq: seq}, nil)
 	b.Init()
 	return b
 }

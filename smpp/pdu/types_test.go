@@ -40,7 +40,7 @@ func TestBind(t *testing.T) {
 		t.Fatalf("unexpected bytes:\nwant:\n%s\nhave:\n%s",
 			hex.Dump(tx), hex.Dump(b.Bytes()))
 	}
-	pdu, err := Decode(&b)
+	pdu, _, _, err := Decode(&b)
 	if err != nil {
 		t.Fatal(err)
 	}

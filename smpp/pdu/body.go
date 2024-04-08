@@ -39,4 +39,6 @@ type Body interface {
 	// SerializeTo encodes the PDU to its binary form, including
 	// the header and all fields.
 	SerializeTo(w io.Writer) error
+
+	Raw() []byte
 }
