@@ -356,6 +356,48 @@ func NewDeliverSMRespSeq(seq uint32) Body {
 	return b
 }
 
+// DataSM PDU.
+type DataSM struct{ *Codec }
+
+func newDataSM(hdr *Header, raw []byte) *Codec {
+	return NewCodec(
+		hdr,
+		pdufield.List{
+			pdufield.ServiceType,
+			pdufield.SourceAddrTON,
+			pdufield.SourceAddrNPI,
+			pdufield.SourceAddr,
+			pdufield.DestAddrTON,
+			pdufield.DestAddrNPI,
+			pdufield.DestinationAddr,
+			pdufield.ESMClass,
+			pdufield.RegisteredDelivery,
+			pdufield.DataCoding,
+		},
+		raw,
+	)
+}
+
+// DataSMResp PDU.
+type DataSMResp struct{ *Codec }
+
+func newDataSMResp(hdr *Header, raw []byte) *Codec {
+	return NewCodec(
+		hdr,
+		pdufield.List{
+			pdufield.MessageID,
+		},
+		raw,
+	)
+}
+
+func NewDataSMResp(seq uint32, messageId string) Body {
+	b := newDataSMResp(&Header{ID: DataSMRespID, Seq: seq}, nil)
+	b.Init()
+	b.TLVFields().Set(pdutlv.TagReceiptedMessageID, messageId)
+	return b
+}
+
 // Unbind PDU.
 type Unbind struct{ *Codec }
 

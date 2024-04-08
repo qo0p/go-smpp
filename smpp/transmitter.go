@@ -132,6 +132,18 @@ func (t *Transmitter) handlePDU(f HandlerFunc) {
 			pResp := pdu.NewDeliverSMRespSeq(p.Header().Seq)
 			t.cl.Write(pResp)
 		}
+		if p.Header().ID == pdu.DataSMID { // Send DataSMResp
+			messageID := ""
+			for n, v := range p.TLVFields() {
+				if n == pdutlv.TagReceiptedMessageID {
+					messageID = v.String()
+				}
+			}
+			if messageID != "" {
+				pResp := pdu.NewDataSMResp(p.Header().Seq, messageID)
+				t.cl.Write(pResp)
+			}
+		}
 	}
 	t.tx.Lock()
 	for _, rc := range t.tx.inflight {
