@@ -25,6 +25,13 @@ type Codec struct {
 	t pdutlv.Map
 }
 
+func NewCodec(h *Header, l pdufield.List) *Codec {
+	return &Codec{
+		h: h,
+		l: l,
+	}
+}
+
 // init initializes the codec's list and maps and sets the header
 // sequence number.
 func (pdu *Codec) Init() {
